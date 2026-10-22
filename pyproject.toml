@@ -19,6 +19,14 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
 ]
 
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501"]
+
 [tool.black]
 line-length = 88
 target-version = ["py311"]
@@ -26,4 +34,5 @@ target-version = ["py311"]
 [tool.isort]
 profile = "black"
 line_length = 88
+
 
