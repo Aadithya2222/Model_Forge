@@ -92,12 +92,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Create all tables on startup (idempotent)."""
-    from src.database.models import Base
+    try:
+        from src.database.models import Base
 
-    engine = get_engine()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("database_schema_initialized")
+        engine = get_engine()
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("database_schema_initialized")
+    except Exception as exc:
+        logger.warning("database_schema_init_skipped", error=str(exc))
 
 
 async def check_db_health() -> dict:
