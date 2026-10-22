@@ -11,7 +11,7 @@ from enum import Enum
 from functools import lru_cache
 from typing import List, Optional, Union
 
-from pydantic import AnyHttpUrl, Field, field_validator
+from pydantic import AliasChoices, AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -29,11 +29,28 @@ class ModelStage(str, Enum):
 
 
 class DatabaseSettings(BaseSettings):
-    host: str = Field(default="localhost", env="POSTGRES_HOST")
-    port: int = Field(default=5432, env="POSTGRES_PORT")
-    user: str = Field(default="modelmesh", env="POSTGRES_USER")
-    password: str = Field(default="modelmesh_secret", env="POSTGRES_PASSWORD")
-    db: str = Field(default="modelmesh_db", env="POSTGRES_DB")
+    host: str = Field(
+        default="localhost",
+        validation_alias=AliasChoices("POSTGRES_HOST", "postgres_host", "host"),
+    )
+    port: int = Field(
+        default=5432,
+        validation_alias=AliasChoices("POSTGRES_PORT", "postgres_port", "port"),
+    )
+    user: str = Field(
+        default="modelmesh",
+        validation_alias=AliasChoices("POSTGRES_USER", "postgres_user"),
+    )
+    password: str = Field(
+        default="modelmesh_secret",
+        validation_alias=AliasChoices(
+            "POSTGRES_PASSWORD", "postgres_password", "password"
+        ),
+    )
+    db: str = Field(
+        default="modelmesh_db",
+        validation_alias=AliasChoices("POSTGRES_DB", "postgres_db", "db"),
+    )
     pool_size: int = Field(default=10, env="DB_POOL_SIZE")
     max_overflow: int = Field(default=20, env="DB_MAX_OVERFLOW")
 

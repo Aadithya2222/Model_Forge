@@ -91,8 +91,28 @@ class ModelRegistryClient:
         )
         return model
 
+    def _is_mlflow_available(self) -> bool:
+        uri = settings.mlflow.tracking_uri
+        if uri.startswith("http://") or uri.startswith("https://"):
+            import socket
+            from urllib.parse import urlparse
+
+            try:
+                parsed = urlparse(uri)
+                host = parsed.hostname or "localhost"
+                port = parsed.port or (443 if parsed.scheme == "https" else 80)
+                with socket.create_connection((host, port), timeout=0.5):
+                    return True
+            except (socket.timeout, ConnectionRefusedError, OSError):
+                return False
+        return True
+
     def load_champion(self) -> Tuple[Any, str]:
         """Returns (model, version_str)."""
+        if not self._is_mlflow_available():
+            raise RuntimeError(
+                f"MLflow server at {settings.mlflow.tracking_uri} is unreachable"
+            )
         version = self.get_champion_version()
         if not version:
             raise RuntimeError(f"No champion model found for '{self.model_name}'")
@@ -100,6 +120,8 @@ class ModelRegistryClient:
 
     def load_challenger(self) -> Tuple[Optional[Any], Optional[str]]:
         """Returns (model, version_str) or (None, None)."""
+        if not self._is_mlflow_available():
+            return None, None
         version = self.get_challenger_version()
         if not version:
             logger.info("no_challenger_model_found")
