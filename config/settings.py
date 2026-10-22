@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import lru_cache
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings
@@ -152,15 +152,15 @@ class RetrainingSettings(BaseSettings):
 
 class SecuritySettings(BaseSettings):
     api_key_header: str = Field(default="X-API-Key", env="API_KEY_HEADER")
-    api_keys: List[str] = Field(
+    api_keys: Union[List[str], str] = Field(
         default=["dev-key-1234", "test-key-5678"], env="API_KEYS"
     )
     rate_limit_per_minute: int = Field(default=1000, env="RATE_LIMIT_PER_MINUTE")
-    cors_origins: List[AnyHttpUrl] = Field(
+    cors_origins: Union[List[AnyHttpUrl], List[str], str] = Field(
         default=["http://localhost:3000"], env="CORS_ORIGINS"
     )
 
-    @field_validator("api_keys", mode="before")
+    @field_validator("api_keys", mode="after")
     @classmethod
     def parse_api_keys(cls, v):
         if isinstance(v, str):
@@ -174,7 +174,7 @@ class SecuritySettings(BaseSettings):
             return [k.strip() for k in v.split(",") if k.strip()]
         return v
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", mode="after")
     @classmethod
     def parse_cors_origins(cls, v):
         if isinstance(v, str):
