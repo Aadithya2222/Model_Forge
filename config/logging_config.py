@@ -12,7 +12,6 @@ import logging
 import sys
 import uuid
 from contextvars import ContextVar
-from typing import Any, Dict
 
 import structlog
 from structlog.types import EventDict, WrappedLogger
@@ -37,6 +36,7 @@ def set_model_version(version: str) -> None:
 
 
 # ── Custom processors ─────────────────────────────────────────────────────────
+
 
 def add_trace_id(
     logger: WrappedLogger, method: str, event_dict: EventDict
@@ -71,6 +71,7 @@ def drop_color_message_key(
 
 
 # ── Setup function ────────────────────────────────────────────────────────────
+
 
 def configure_logging(log_level: str = "INFO", log_format: str = "json") -> None:
     """

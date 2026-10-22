@@ -26,7 +26,6 @@ import uuid
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, Request, Response
-from fastapi.responses import JSONResponse
 
 from config.logging_config import get_logger, set_model_version
 from config.settings import get_settings
@@ -82,6 +81,7 @@ def hash_ip(ip: str) -> str:
 
 # ── Single Prediction ─────────────────────────────────────────────────────────
 
+
 @router.post(
     "/predict",
     response_model=SinglePrediction,
@@ -112,7 +112,7 @@ async def predict_single(
 
     # ── SHAP explanation (sampled) ────────────────────────────────────────────
     shap_result = None
-    if (request_body.include_shap or model_loader.shap_explainer.should_explain()):
+    if request_body.include_shap or model_loader.shap_explainer.should_explain():
         shap_result = model_loader.shap_explainer.explain(encoded_features)
 
     shap_schema = None
@@ -169,6 +169,7 @@ async def predict_single(
 
 
 # ── Batch Prediction ──────────────────────────────────────────────────────────
+
 
 @router.post(
     "/predict/batch",
@@ -244,6 +245,7 @@ async def predict_batch(
 
 # ── Feedback Endpoint ─────────────────────────────────────────────────────────
 
+
 @router.post(
     "/feedback",
     response_model=FeedbackResponse,
@@ -270,6 +272,7 @@ async def submit_feedback(
 
 # ── Shadow A/B Metrics ────────────────────────────────────────────────────────
 
+
 @router.get(
     "/shadow/metrics",
     summary="Live champion vs challenger shadow metrics",
@@ -283,6 +286,7 @@ async def shadow_metrics(
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 async def _log_prediction(
     *,

@@ -11,10 +11,8 @@ Messages are JSON-encoded with a schema envelope for future schema registry.
 from __future__ import annotations
 
 import json
-import time
-import uuid
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from confluent_kafka import KafkaException, Producer
 
@@ -37,8 +35,8 @@ class KafkaPredictionProducer:
         conf = {
             "bootstrap.servers": settings.kafka.bootstrap_servers,
             "client.id": "modelmesh-api-producer",
-            "acks": "1",                    # leader ack only — balance durability vs latency
-            "linger.ms": 5,                 # micro-batching for throughput
+            "acks": "1",  # leader ack only — balance durability vs latency
+            "linger.ms": 5,  # micro-batching for throughput
             "batch.size": 16384,
             "compression.type": "snappy",
             "retries": 3,

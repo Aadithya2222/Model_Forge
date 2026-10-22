@@ -25,7 +25,7 @@ import mlflow.sklearn
 import numpy as np
 import optuna
 import pandas as pd
-from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
@@ -35,8 +35,6 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
 from config.logging_config import configure_logging, get_logger
@@ -50,6 +48,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 
 
 # ── Feature Engineering ────────────────────────────────────────────────────────
+
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -67,11 +66,15 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     # Encode multi-class categoricals as ordinal
     contract_map = {"Month-to-month": 0, "One year": 1, "Two year": 2}
     payment_map = {
-        "Electronic check": 0, "Mailed check": 1,
-        "Bank transfer (automatic)": 2, "Credit card (automatic)": 3,
+        "Electronic check": 0,
+        "Mailed check": 1,
+        "Bank transfer (automatic)": 2,
+        "Credit card (automatic)": 3,
     }
     df["contract_type_encoded"] = df["Contract"].map(contract_map).fillna(0).astype(int)
-    df["payment_method_encoded"] = df["PaymentMethod"].map(payment_map).fillna(0).astype(int)
+    df["payment_method_encoded"] = (
+        df["PaymentMethod"].map(payment_map).fillna(0).astype(int)
+    )
 
     # Numeric cleanup
     df["total_charges"] = pd.to_numeric(df["TotalCharges"], errors="coerce").fillna(0.0)
@@ -83,9 +86,16 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["churn"] = (df["Churn"] == "Yes").astype(int)
 
     feature_cols = [
-        "tenure", "monthly_charges", "total_charges", "num_products",
-        "has_internet", "contract_type_encoded", "payment_method_encoded",
-        "paperless_billing", "tech_support", "online_security",
+        "tenure",
+        "monthly_charges",
+        "total_charges",
+        "num_products",
+        "has_internet",
+        "contract_type_encoded",
+        "payment_method_encoded",
+        "paperless_billing",
+        "tech_support",
+        "online_security",
     ]
     return df[feature_cols + ["churn"]]
 
@@ -130,9 +140,11 @@ def _generate_synthetic_dataset(n: int = 7043) -> pd.DataFrame:
     tenure = np.where(
         contracts == "Month-to-month",
         np.random.randint(1, 24, n),
-        np.where(contracts == "One year",
-                 np.random.randint(12, 48, n),
-                 np.random.randint(24, 72, n)),
+        np.where(
+            contracts == "One year",
+            np.random.randint(12, 48, n),
+            np.random.randint(24, 72, n),
+        ),
     )
     monthly = np.random.uniform(20, 120, n)
     total = tenure * monthly + np.random.normal(0, 50, n)
@@ -149,26 +161,40 @@ def _generate_synthetic_dataset(n: int = 7043) -> pd.DataFrame:
     churn_prob = np.clip(churn_prob, 0.02, 0.95)
     churn = (np.random.rand(n) < churn_prob).astype(int)
 
-    return pd.DataFrame({
-        "tenure": tenure,
-        "MonthlyCharges": monthly,
-        "TotalCharges": total.astype(str),
-        "NumProducts": np.random.randint(1, 5, n),
-        "InternetService": np.random.choice(["Fiber optic", "DSL", "No"], n, p=[0.44, 0.34, 0.22]),
-        "Contract": contracts,
-        "PaymentMethod": np.random.choice(
-            ["Electronic check", "Mailed check",
-             "Bank transfer (automatic)", "Credit card (automatic)"],
-            n, p=[0.34, 0.22, 0.22, 0.22]
-        ),
-        "PaperlessBilling": np.random.choice(["Yes", "No"], n, p=[0.59, 0.41]),
-        "TechSupport": np.random.choice(["Yes", "No", "No internet service"], n, p=[0.29, 0.49, 0.22]),
-        "OnlineSecurity": np.random.choice(["Yes", "No", "No internet service"], n, p=[0.29, 0.49, 0.22]),
-        "Churn": np.where(churn == 1, "Yes", "No"),
-    })
+    return pd.DataFrame(
+        {
+            "tenure": tenure,
+            "MonthlyCharges": monthly,
+            "TotalCharges": total.astype(str),
+            "NumProducts": np.random.randint(1, 5, n),
+            "InternetService": np.random.choice(
+                ["Fiber optic", "DSL", "No"], n, p=[0.44, 0.34, 0.22]
+            ),
+            "Contract": contracts,
+            "PaymentMethod": np.random.choice(
+                [
+                    "Electronic check",
+                    "Mailed check",
+                    "Bank transfer (automatic)",
+                    "Credit card (automatic)",
+                ],
+                n,
+                p=[0.34, 0.22, 0.22, 0.22],
+            ),
+            "PaperlessBilling": np.random.choice(["Yes", "No"], n, p=[0.59, 0.41]),
+            "TechSupport": np.random.choice(
+                ["Yes", "No", "No internet service"], n, p=[0.29, 0.49, 0.22]
+            ),
+            "OnlineSecurity": np.random.choice(
+                ["Yes", "No", "No internet service"], n, p=[0.29, 0.49, 0.22]
+            ),
+            "Churn": np.where(churn == 1, "Yes", "No"),
+        }
+    )
 
 
 # ── Model Definition ───────────────────────────────────────────────────────────
+
 
 def get_model_and_params(trial: optuna.Trial, model_type: str = "xgboost") -> Any:
     """Build model with Optuna-suggested hyperparameters."""
@@ -182,7 +208,7 @@ def get_model_and_params(trial: optuna.Trial, model_type: str = "xgboost") -> An
             min_child_weight=trial.suggest_int("min_child_weight", 1, 10),
             reg_alpha=trial.suggest_float("reg_alpha", 1e-8, 1.0, log=True),
             reg_lambda=trial.suggest_float("reg_lambda", 1e-8, 1.0, log=True),
-            scale_pos_weight=2.5,    # handle class imbalance
+            scale_pos_weight=2.5,  # handle class imbalance
             use_label_encoder=False,
             eval_metric="logloss",
             random_state=42,
@@ -207,6 +233,7 @@ def get_model_and_params(trial: optuna.Trial, model_type: str = "xgboost") -> An
 
 
 # ── Training Orchestrator ──────────────────────────────────────────────────────
+
 
 class ModelTrainer:
     """
@@ -236,8 +263,7 @@ class ModelTrainer:
         model = get_model_and_params(trial, self.model_type)
         cv = StratifiedKFold(n_splits=self.cv_folds, shuffle=True, random_state=42)
         scores = cross_val_score(
-            model, X_train, y_train,
-            cv=cv, scoring="f1", n_jobs=-1
+            model, X_train, y_train, cv=cv, scoring="f1", n_jobs=-1
         )
         return float(scores.mean())
 
@@ -254,7 +280,9 @@ class ModelTrainer:
         Full training run. Returns MLflow run_id.
         Logs all metrics, params, and model artifact to MLflow.
         """
-        logger.info("training_started", model_type=self.model_type, n_trials=self.n_trials)
+        logger.info(
+            "training_started", model_type=self.model_type, n_trials=self.n_trials
+        )
 
         # ── Optuna HPO ────────────────────────────────────────────────────────
         study = optuna.create_study(
@@ -303,16 +331,20 @@ class ModelTrainer:
                 "churn_rate_train": round(float(y_train.mean()), 4),
             }
 
-            logger.info("model_evaluation", **{k: round(v, 4) for k, v in metrics.items()})
+            logger.info(
+                "model_evaluation", **{k: round(v, 4) for k, v in metrics.items()}
+            )
 
             # ── MLflow Logging ────────────────────────────────────────────────
-            mlflow.log_params({
-                "model_type": self.model_type,
-                "n_optuna_trials": self.n_trials,
-                "cv_folds": self.cv_folds,
-                "training_data_hash": data_hash or "unknown",
-                **best_params,
-            })
+            mlflow.log_params(
+                {
+                    "model_type": self.model_type,
+                    "n_optuna_trials": self.n_trials,
+                    "cv_folds": self.cv_folds,
+                    "training_data_hash": data_hash or "unknown",
+                    **best_params,
+                }
+            )
             mlflow.log_metrics(metrics)
 
             # Log feature importance
@@ -333,13 +365,14 @@ class ModelTrainer:
 
             # Log model + input signature
             from mlflow.models import infer_signature
+
             signature = infer_signature(X_train, y_proba)
             mlflow.sklearn.log_model(
                 sk_model=final_model,
                 artifact_path="model",
                 signature=signature,
                 input_example=X_train.head(3),
-                registered_model_name=None,   # register separately
+                registered_model_name=None,  # register separately
             )
 
             # Save reference features for drift monitoring
@@ -348,11 +381,13 @@ class ModelTrainer:
             X_train.to_parquet(ref_path, index=False)
             mlflow.log_artifact(str(ref_path), "reference_data")
 
-            mlflow.set_tags({
-                "model_type": self.model_type,
-                "environment": settings.environment,
-                "feature_count": len(X_train.columns),
-            })
+            mlflow.set_tags(
+                {
+                    "model_type": self.model_type,
+                    "environment": settings.environment,
+                    "feature_count": len(X_train.columns),
+                }
+            )
 
             logger.info("mlflow_run_complete", run_id=run_id, metrics=metrics)
             return run_id
@@ -377,7 +412,10 @@ def train_and_register(
 
     trainer = ModelTrainer(model_type=model_type, n_optuna_trials=n_trials)
     run_id = trainer.train(
-        X_train, X_test, y_train, y_test,
+        X_train,
+        X_test,
+        y_train,
+        y_test,
         data_hash=data_hash,
         run_name=f"modelmesh-{model_type}-{data_hash[:6]}",
     )
@@ -386,6 +424,7 @@ def train_and_register(
 
     if auto_register:
         from src.registry.model_registry import ModelRegistryClient
+
         registry = ModelRegistryClient()
         version = registry.register_new_model(
             run_id=run_id,
@@ -401,6 +440,7 @@ def train_and_register(
 
 if __name__ == "__main__":
     import sys
+
     data_file = sys.argv[1] if len(sys.argv) > 1 else None
     result = train_and_register(data_path=data_file, n_trials=5)
     print(json.dumps(result, indent=2))

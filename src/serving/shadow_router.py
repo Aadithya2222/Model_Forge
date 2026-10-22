@@ -16,7 +16,7 @@ from __future__ import annotations
 import asyncio
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 
 from config.logging_config import get_logger
@@ -29,13 +29,14 @@ settings = get_settings()
 @dataclass
 class ShadowMetrics:
     """In-memory rolling counters for the shadow deployment window."""
+
     champion_requests: int = 0
     challenger_requests: int = 0
     champion_total_latency: float = 0.0
     challenger_total_latency: float = 0.0
     champion_total_proba: float = 0.0
     challenger_total_proba: float = 0.0
-    agreement_count: int = 0   # both models predict same label
+    agreement_count: int = 0  # both models predict same label
 
 
 class ShadowRouter:
@@ -100,15 +101,14 @@ class ShadowRouter:
         """
         t0 = time.perf_counter()
         import numpy as np
+
         X = np.array([feature_array])
         proba = float(model.predict_proba(X)[0][1])
         label = int(proba >= 0.5)
         latency = (time.perf_counter() - t0) * 1000
         return proba, label, latency
 
-    def predict_champion(
-        self, features: Dict[str, Any]
-    ) -> Tuple[float, int, float]:
+    def predict_champion(self, features: Dict[str, Any]) -> Tuple[float, int, float]:
         """Champion prediction — always synchronous, always returned to client."""
         arr = self._features_to_array(features)
         proba, label, latency = self._predict_single(
@@ -191,22 +191,20 @@ class ShadowRouter:
             "challenger_avg_latency_ms": round(m.challenger_total_latency / chall_n, 2),
             "champion_avg_proba": round(m.champion_total_proba / champ_n, 4),
             "challenger_avg_proba": round(m.challenger_total_proba / chall_n, 4),
-            "agreement_rate": round(m.agreement_count / max(m.challenger_requests, 1), 4),
+            "agreement_rate": round(
+                m.agreement_count / max(m.challenger_requests, 1), 4
+            ),
             "shadow_pct": self._shadow_pct,
         }
 
-    def reload_challenger(
-        self, new_challenger: Any, new_version: str
-    ) -> None:
+    def reload_challenger(self, new_challenger: Any, new_version: str) -> None:
         """Hot-swap the challenger model without downtime."""
         self.challenger_model = new_challenger
         self.challenger_version = new_version
-        self.metrics = ShadowMetrics()   # reset counters for new challenger
+        self.metrics = ShadowMetrics()  # reset counters for new challenger
         logger.info("challenger_model_reloaded", new_version=new_version)
 
-    def reload_champion(
-        self, new_champion: Any, new_version: str
-    ) -> None:
+    def reload_champion(self, new_champion: Any, new_version: str) -> None:
         """Hot-swap the champion model (after promotion)."""
         self.champion_model = new_champion
         self.champion_version = new_version

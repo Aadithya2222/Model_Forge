@@ -190,9 +190,7 @@ class ModelRegistryClient:
     ) -> ModelVersion:
         """Register a trained model from an MLflow run."""
         model_uri = f"runs:/{run_id}/{artifact_path}"
-        model_details = mlflow.register_model(
-            model_uri=model_uri, name=self.model_name
-        )
+        model_details = mlflow.register_model(model_uri=model_uri, name=self.model_name)
         if tags:
             for k, v in tags.items():
                 self.client.set_model_version_tag(

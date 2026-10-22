@@ -51,10 +51,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         api_key = request.headers.get(settings.security.api_key_header)
         if api_key:
             return f"key:{api_key}"
-        client_ip = (
-            request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-            or getattr(request.client, "host", "unknown")
-        )
+        client_ip = request.headers.get("X-Forwarded-For", "").split(",")[
+            0
+        ].strip() or getattr(request.client, "host", "unknown")
         return f"ip:{client_ip}"
 
     def _is_allowed(self, key: str) -> tuple[bool, int]:

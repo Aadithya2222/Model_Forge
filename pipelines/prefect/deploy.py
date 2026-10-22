@@ -5,16 +5,16 @@ Registers flows as deployments with schedules.
 Run once: python pipelines/prefect/deploy.py
 """
 
-from prefect import serve
-from prefect.deployments import Deployment
-from prefect.server.schemas.schedules import CronSchedule, IntervalSchedule
 from datetime import timedelta
 
+from prefect.deployments import Deployment
+from prefect.server.schemas.schedules import CronSchedule, IntervalSchedule
+
+from pipelines.prefect.drift_pipeline import modelmesh_drift_check_flow
 from pipelines.prefect.training_pipeline import (
     modelmesh_retrain_flow,
     modelmesh_train_flow,
 )
-from pipelines.prefect.drift_pipeline import modelmesh_drift_check_flow
 
 
 def deploy_all():

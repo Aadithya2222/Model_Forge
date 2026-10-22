@@ -9,7 +9,7 @@ Returns top-N features sorted by absolute SHAP impact.
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import shap
@@ -34,7 +34,7 @@ class SHAPExplainer:
         self,
         model: Any,
         feature_names: List[str],
-        model_type: str = "tree",        # tree | linear | kernel
+        model_type: str = "tree",  # tree | linear | kernel
         background_data: Optional[np.ndarray] = None,
     ) -> None:
         self.model = model
@@ -48,9 +48,7 @@ class SHAPExplainer:
             n_features=len(feature_names),
         )
 
-    def _build_explainer(
-        self, background_data: Optional[np.ndarray]
-    ) -> shap.Explainer:
+    def _build_explainer(self, background_data: Optional[np.ndarray]) -> shap.Explainer:
         """
         Choose explainer type based on model class.
         TreeExplainer is O(n_features²) — fast for ≤100 features.
@@ -68,7 +66,7 @@ class SHAPExplainer:
             if background_data is not None:
                 return shap.KernelExplainer(
                     self.model.predict_proba,
-                    background_data[:50],   # small background for speed
+                    background_data[:50],  # small background for speed
                 )
             # Last resort: use linear explainer
             return shap.LinearExplainer(
@@ -110,7 +108,7 @@ class SHAPExplainer:
             # index [1] = positive class (churn=1)
             shap_output = self._explainer.shap_values(feature_array)
             if isinstance(shap_output, list):
-                sv = shap_output[1][0].tolist()   # class 1, first instance
+                sv = shap_output[1][0].tolist()  # class 1, first instance
                 base_val = float(self._explainer.expected_value[1])
             else:
                 sv = shap_output[0].tolist()
@@ -152,10 +150,7 @@ class SHAPExplainer:
         """Batch SHAP computation — more efficient for batch endpoints."""
         try:
             feature_matrix = np.array(
-                [
-                    [f.get(name, 0) for name in self.feature_names]
-                    for f in feature_list
-                ]
+                [[f.get(name, 0) for name in self.feature_names] for f in feature_list]
             )
             shap_output = self._explainer.shap_values(feature_matrix)
             if isinstance(shap_output, list):
@@ -172,20 +167,24 @@ class SHAPExplainer:
                     key=lambda x: abs(x[1]),
                     reverse=True,
                 )[:top_n]
-                results.append({
-                    "feature_names": self.feature_names,
-                    "shap_values": [round(v, 5) for v in sv.tolist()],
-                    "base_value": round(base_val, 5),
-                    "top_features": [
-                        {
-                            "feature": name,
-                            "shap_value": round(val, 5),
-                            "feature_value": feature_list[i].get(name),
-                            "direction": "increases_churn" if val > 0 else "decreases_churn",
-                        }
-                        for name, val in top_features
-                    ],
-                })
+                results.append(
+                    {
+                        "feature_names": self.feature_names,
+                        "shap_values": [round(v, 5) for v in sv.tolist()],
+                        "base_value": round(base_val, 5),
+                        "top_features": [
+                            {
+                                "feature": name,
+                                "shap_value": round(val, 5),
+                                "feature_value": feature_list[i].get(name),
+                                "direction": (
+                                    "increases_churn" if val > 0 else "decreases_churn"
+                                ),
+                            }
+                            for name, val in top_features
+                        ],
+                    }
+                )
             return results
         except Exception as exc:
             logger.error("batch_shap_failed", error=str(exc))

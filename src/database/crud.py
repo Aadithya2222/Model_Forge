@@ -8,8 +8,8 @@ Keeps raw SQL / ORM calls out of business logic.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import desc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 
 
 # ── Prediction Logs ────────────────────────────────────────────────────────────
+
 
 async def create_prediction_log(
     session: AsyncSession,
@@ -128,6 +129,7 @@ async def update_prediction_feedback(
 
 # ── Drift Reports ──────────────────────────────────────────────────────────────
 
+
 async def create_drift_report(
     session: AsyncSession,
     *,
@@ -188,6 +190,7 @@ async def get_latest_drift_report(
 
 # ── Retrain Events ─────────────────────────────────────────────────────────────
 
+
 async def create_retrain_event(
     session: AsyncSession,
     *,
@@ -213,17 +216,11 @@ async def update_retrain_event(
     event_id: uuid.UUID,
     **kwargs: Any,
 ) -> None:
-    stmt = (
-        update(RetrainEvent)
-        .where(RetrainEvent.id == event_id)
-        .values(**kwargs)
-    )
+    stmt = update(RetrainEvent).where(RetrainEvent.id == event_id).values(**kwargs)
     await session.execute(stmt)
 
 
-async def count_retrains_today(
-    session: AsyncSession, model_name: str
-) -> int:
+async def count_retrains_today(session: AsyncSession, model_name: str) -> int:
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     stmt = (
         select(func.count())
@@ -239,9 +236,8 @@ async def count_retrains_today(
 
 # ── A/B Test Results ───────────────────────────────────────────────────────────
 
-async def create_ab_result(
-    session: AsyncSession, **kwargs: Any
-) -> ABTestResult:
+
+async def create_ab_result(session: AsyncSession, **kwargs: Any) -> ABTestResult:
     result = ABTestResult(**kwargs)
     session.add(result)
     await session.flush()
@@ -263,9 +259,8 @@ async def get_latest_ab_results(
 
 # ── Model Metadata ─────────────────────────────────────────────────────────────
 
-async def upsert_model_metadata(
-    session: AsyncSession, **kwargs: Any
-) -> ModelMetadata:
+
+async def upsert_model_metadata(session: AsyncSession, **kwargs: Any) -> ModelMetadata:
     stmt = select(ModelMetadata).where(
         ModelMetadata.model_name == kwargs["model_name"],
         ModelMetadata.version == kwargs["version"],

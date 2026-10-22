@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
 
 from config.settings import get_settings
 from src.api.schemas.inference import HealthResponse, ReadinessResponse, ServiceStatus
@@ -55,11 +54,13 @@ async def health_check(request: Request) -> HealthResponse:
 
     # Database
     db_health = await check_db_health()
-    services.append(ServiceStatus(
-        name="postgresql",
-        status=db_health["status"],
-        details=db_health.get("error"),
-    ))
+    services.append(
+        ServiceStatus(
+            name="postgresql",
+            status=db_health["status"],
+            details=db_health.get("error"),
+        )
+    )
 
     # Kafka
     kafka_producer = getattr(request.app.state, "kafka_producer", None)
@@ -68,11 +69,19 @@ async def health_check(request: Request) -> HealthResponse:
 
     # Model Registry
     model_loader = getattr(request.app.state, "model_loader", None)
-    services.append(ServiceStatus(
-        name="model_registry",
-        status="healthy" if model_loader and model_loader.champion_version else "degraded",
-        details=f"champion={model_loader.champion_version}" if model_loader else None,
-    ))
+    services.append(
+        ServiceStatus(
+            name="model_registry",
+            status=(
+                "healthy"
+                if model_loader and model_loader.champion_version
+                else "degraded"
+            ),
+            details=(
+                f"champion={model_loader.champion_version}" if model_loader else None
+            ),
+        )
+    )
 
     overall = (
         "healthy"

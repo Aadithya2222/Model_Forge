@@ -13,7 +13,6 @@ Each flow is broken into Prefect tasks for:
 
 from __future__ import annotations
 
-import asyncio
 from datetime import timedelta
 from typing import Any, Dict, Optional
 
@@ -27,6 +26,7 @@ settings = get_settings()
 
 # ── Tasks ──────────────────────────────────────────────────────────────────────
 
+
 @task(
     name="load-and-prepare-data",
     retries=2,
@@ -35,8 +35,11 @@ settings = get_settings()
     cache_expiration=timedelta(hours=6),
 )
 def task_load_data(data_path: Optional[str] = None) -> Dict:
+    import hashlib
+
+    import pandas as pd
+
     from src.training.train import load_and_prepare_data
-    import hashlib, pandas as pd
 
     X_train, X_test, y_train, y_test = load_and_prepare_data(data_path)
     data_hash = hashlib.md5(
@@ -67,7 +70,9 @@ def task_train_model(
     from src.training.train import ModelTrainer
 
     logger = get_run_logger()
-    logger.info(f"Training {model_type} with {n_trials} HPO trials on {data['n_train']} rows")
+    logger.info(
+        f"Training {model_type} with {n_trials} HPO trials on {data['n_train']} rows"
+    )
 
     trainer = ModelTrainer(model_type=model_type, n_optuna_trials=n_trials)
     run_id = trainer.train(
@@ -117,6 +122,7 @@ def task_compare_models(
     mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
 
     from src.registry.model_registry import ModelRegistryClient
+
     registry = ModelRegistryClient()
 
     # Load challenger
@@ -209,6 +215,7 @@ def task_notify(
 
 
 # ── Flows ──────────────────────────────────────────────────────────────────────
+
 
 @flow(
     name="modelmesh-train",

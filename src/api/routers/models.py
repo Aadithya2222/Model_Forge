@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse
 
 from config.logging_config import get_logger
 from config.settings import get_settings
@@ -27,14 +26,16 @@ async def list_models(_: str = Depends(verify_api_key)) -> ModelListResponse:
             metrics = registry.get_run_metrics(v.run_id)
         except Exception:
             pass
-        models.append(ModelInfo(
-            name=v.name,
-            version=v.version,
-            stage=v.current_stage,
-            mlflow_run_id=v.run_id,
-            metrics=metrics,
-            created_at=None,
-        ))
+        models.append(
+            ModelInfo(
+                name=v.name,
+                version=v.version,
+                stage=v.current_stage,
+                mlflow_run_id=v.run_id,
+                metrics=metrics,
+                created_at=None,
+            )
+        )
     return ModelListResponse(models=models, total=len(models))
 
 

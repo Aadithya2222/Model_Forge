@@ -8,13 +8,12 @@ Pydantic v2 style — using model_config instead of inner Config class.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
-from uuid import UUID
+from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
-
+from pydantic import BaseModel, Field, field_validator
 
 # ── Feature Input ──────────────────────────────────────────────────────────────
+
 
 class ChurnFeatures(BaseModel):
     """
@@ -22,18 +21,22 @@ class ChurnFeatures(BaseModel):
     Matches the training dataset column names exactly.
     """
 
-    model_config = {"json_schema_extra": {"example": {
-        "tenure": 24,
-        "monthly_charges": 65.5,
-        "total_charges": 1572.0,
-        "num_products": 2,
-        "has_internet": 1,
-        "contract_type": "Month-to-month",
-        "payment_method": "Electronic check",
-        "paperless_billing": 1,
-        "tech_support": 0,
-        "online_security": 0,
-    }}}
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "tenure": 24,
+                "monthly_charges": 65.5,
+                "total_charges": 1572.0,
+                "num_products": 2,
+                "has_internet": 1,
+                "contract_type": "Month-to-month",
+                "payment_method": "Electronic check",
+                "paperless_billing": 1,
+                "tech_support": 0,
+                "online_security": 0,
+            }
+        }
+    }
 
     tenure: int = Field(..., ge=0, le=120, description="Customer tenure in months")
     monthly_charges: float = Field(..., ge=0.0, le=200.0)
@@ -69,6 +72,7 @@ class SingleInferenceRequest(BaseModel):
 
 # ── Inference Response ─────────────────────────────────────────────────────────
 
+
 class SHAPExplanation(BaseModel):
     feature_names: List[str]
     shap_values: List[float]
@@ -77,7 +81,7 @@ class SHAPExplanation(BaseModel):
 
 
 class SinglePrediction(BaseModel):
-    prediction: int                          # 0 = no churn, 1 = churn
+    prediction: int  # 0 = no churn, 1 = churn
     probability: float = Field(..., ge=0.0, le=1.0)
     model_name: str
     model_version: str
@@ -97,6 +101,7 @@ class BatchPredictionResponse(BaseModel):
 
 # ── Feedback / Label Collection ────────────────────────────────────────────────
 
+
 class FeedbackRequest(BaseModel):
     trace_id: str = Field(..., description="Trace ID returned by inference endpoint")
     actual_label: int = Field(..., ge=0, le=1)
@@ -109,9 +114,10 @@ class FeedbackResponse(BaseModel):
 
 # ── Health & Status ────────────────────────────────────────────────────────────
 
+
 class ServiceStatus(BaseModel):
     name: str
-    status: str        # healthy | degraded | unhealthy
+    status: str  # healthy | degraded | unhealthy
     latency_ms: Optional[float] = None
     details: Optional[str] = None
 
@@ -133,6 +139,7 @@ class ReadinessResponse(BaseModel):
 
 # ── Drift & Monitoring ─────────────────────────────────────────────────────────
 
+
 class DriftReportResponse(BaseModel):
     model_name: str
     model_version: str
@@ -145,6 +152,7 @@ class DriftReportResponse(BaseModel):
 
 
 # ── Model Registry ─────────────────────────────────────────────────────────────
+
 
 class ModelInfo(BaseModel):
     name: str
@@ -161,6 +169,7 @@ class ModelListResponse(BaseModel):
 
 
 # ── Generic Responses ──────────────────────────────────────────────────────────
+
 
 class ErrorResponse(BaseModel):
     error: str

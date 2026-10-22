@@ -19,7 +19,6 @@ On alert:
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
@@ -28,11 +27,7 @@ import numpy as np
 import pandas as pd
 from evidently import ColumnMapping
 from evidently.metric_preset import DataDriftPreset, DataQualityPreset
-from evidently.metrics import (
-    ColumnDriftMetric,
-    DatasetDriftMetric,
-    DatasetMissingValuesSummaryMetric,
-)
+from evidently.metrics import DatasetDriftMetric
 from evidently.report import Report
 
 from config.logging_config import configure_logging, get_logger
@@ -59,13 +54,18 @@ class DriftMonitor:
     """
 
     NUMERIC_FEATURES = [
-        "tenure", "monthly_charges", "total_charges",
+        "tenure",
+        "monthly_charges",
+        "total_charges",
         "num_products",
     ]
     CATEGORICAL_FEATURES = [
-        "has_internet", "contract_type_encoded",
-        "payment_method_encoded", "paperless_billing",
-        "tech_support", "online_security",
+        "has_internet",
+        "contract_type_encoded",
+        "payment_method_encoded",
+        "paperless_billing",
+        "tech_support",
+        "online_security",
     ]
     ALL_FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
 
@@ -93,18 +93,20 @@ class DriftMonitor:
         """Fallback: generate synthetic reference matching training distribution."""
         np.random.seed(42)
         n = 5000
-        return pd.DataFrame({
-            "tenure": np.random.randint(0, 72, n),
-            "monthly_charges": np.random.uniform(20, 120, n),
-            "total_charges": np.random.uniform(100, 8000, n),
-            "num_products": np.random.randint(1, 5, n),
-            "has_internet": np.random.randint(0, 2, n),
-            "contract_type_encoded": np.random.randint(0, 3, n),
-            "payment_method_encoded": np.random.randint(0, 4, n),
-            "paperless_billing": np.random.randint(0, 2, n),
-            "tech_support": np.random.randint(0, 2, n),
-            "online_security": np.random.randint(0, 2, n),
-        })
+        return pd.DataFrame(
+            {
+                "tenure": np.random.randint(0, 72, n),
+                "monthly_charges": np.random.uniform(20, 120, n),
+                "total_charges": np.random.uniform(100, 8000, n),
+                "num_products": np.random.randint(1, 5, n),
+                "has_internet": np.random.randint(0, 2, n),
+                "contract_type_encoded": np.random.randint(0, 3, n),
+                "payment_method_encoded": np.random.randint(0, 4, n),
+                "paperless_billing": np.random.randint(0, 2, n),
+                "tech_support": np.random.randint(0, 2, n),
+                "online_security": np.random.randint(0, 2, n),
+            }
+        )
 
     def build_current_df(self, feature_records: List[Dict]) -> pd.DataFrame:
         """Convert prediction log records to DataFrame."""
@@ -116,9 +118,7 @@ class DriftMonitor:
                 df[col] = 0
         return df[self.ALL_FEATURES].fillna(0)
 
-    def run_drift_report(
-        self, current_df: pd.DataFrame
-    ) -> Dict[str, Any]:
+    def run_drift_report(self, current_df: pd.DataFrame) -> Dict[str, Any]:
         """
         Run Evidently DataDrift report.
         Returns structured dict with per-feature metrics.
@@ -128,11 +128,13 @@ class DriftMonitor:
             categorical_features=self.CATEGORICAL_FEATURES,
         )
 
-        report = Report(metrics=[
-            DatasetDriftMetric(),
-            DataDriftPreset(),
-            DataQualityPreset(),
-        ])
+        report = Report(
+            metrics=[
+                DatasetDriftMetric(),
+                DataDriftPreset(),
+                DataQualityPreset(),
+            ]
+        )
 
         ref_sample = self._reference_df.sample(
             n=min(len(self._reference_df), settings.monitoring.drift_reference_window),
@@ -150,8 +152,7 @@ class DriftMonitor:
 
         # ── Extract key metrics ───────────────────────────────────────────────
         dataset_metric = next(
-            (m for m in result["metrics"]
-             if m["metric"] == "DatasetDriftMetric"), {}
+            (m for m in result["metrics"] if m["metric"] == "DatasetDriftMetric"), {}
         )
         result_data = dataset_metric.get("result", {})
         dataset_drift = result_data.get("dataset_drift", False)
@@ -304,6 +305,9 @@ class DriftMonitorService:
                 model_name=model_name,
                 drift_report_id=drift_report_id,
             )
+            logger.info(
+                "retrain_event_created", event_id=str(getattr(retrain_event, "id", ""))
+            )
 
         # 2. Trigger Prefect deployment run
         if settings.enable_auto_retrain:
@@ -329,6 +333,7 @@ class DriftMonitorService:
     def _get_current_model_version(self) -> str:
         try:
             from src.registry.model_registry import ModelRegistryClient
+
             registry = ModelRegistryClient()
             v = registry.get_champion_version()
             return v.version if v else "unknown"

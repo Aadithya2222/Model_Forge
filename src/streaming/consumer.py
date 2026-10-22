@@ -13,10 +13,8 @@ from __future__ import annotations
 
 import json
 import signal
-import sys
 import time
 from collections import deque
-from datetime import datetime
 from typing import Any, Deque, Dict, List, Optional
 
 from confluent_kafka import Consumer, KafkaException, Message
@@ -39,7 +37,7 @@ class PredictionConsumer:
     def __init__(
         self,
         buffer_size: int = 5000,
-        on_drift_check_interval: int = 100,   # check drift every N messages
+        on_drift_check_interval: int = 100,  # check drift every N messages
     ) -> None:
         self._buffer: Deque[Dict[str, Any]] = deque(maxlen=buffer_size)
         self._check_interval = on_drift_check_interval
@@ -63,9 +61,7 @@ class PredictionConsumer:
             group=settings.kafka.consumer_group,
         )
 
-    def get_recent_features(
-        self, n: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+    def get_recent_features(self, n: Optional[int] = None) -> List[Dict[str, Any]]:
         """Return most recent N feature dicts for drift analysis."""
         items = list(self._buffer)
         return items[-n:] if n else items
@@ -96,12 +92,14 @@ class PredictionConsumer:
                 event = json.loads(msg.value().decode("utf-8"))
 
                 if event.get("event_type") == "prediction":
-                    self._buffer.append({
-                        "features": event.get("features", {}),
-                        "model_version": event.get("model_version"),
-                        "timestamp": event.get("timestamp"),
-                        "prediction_label": event.get("prediction_label"),
-                    })
+                    self._buffer.append(
+                        {
+                            "features": event.get("features", {}),
+                            "model_version": event.get("model_version"),
+                            "timestamp": event.get("timestamp"),
+                            "prediction_label": event.get("prediction_label"),
+                        }
+                    )
                     self._message_count += 1
 
                     if self._message_count % 1000 == 0:

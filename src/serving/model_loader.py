@@ -8,7 +8,7 @@ Handles hot-reloading when new versions are promoted.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
 
@@ -90,9 +90,7 @@ class ModelLoader:
     async def reload_champion(self) -> None:
         """Called after promotion — hot-swap champion without restart."""
         loop = asyncio.get_event_loop()
-        model, version = await loop.run_in_executor(
-            None, self.registry.load_champion
-        )
+        model, version = await loop.run_in_executor(None, self.registry.load_champion)
         self._champion_version = version
         if self.shadow_router:
             self.shadow_router.reload_champion(model, version)
@@ -109,9 +107,7 @@ class ModelLoader:
     async def reload_challenger(self) -> None:
         """Called after a new model is registered to staging."""
         loop = asyncio.get_event_loop()
-        model, version = await loop.run_in_executor(
-            None, self.registry.load_challenger
-        )
+        model, version = await loop.run_in_executor(None, self.registry.load_challenger)
         self._challenger_version = version
         if self.shadow_router and model:
             self.shadow_router.reload_challenger(model, version)
@@ -132,16 +128,18 @@ class ModelLoader:
         """
         np.random.seed(42)
         n = 100
-        data = np.column_stack([
-            np.random.randint(0, 72, n),          # tenure
-            np.random.uniform(20, 120, n),         # monthly_charges
-            np.random.uniform(100, 8000, n),       # total_charges
-            np.random.randint(1, 5, n),            # num_products
-            np.random.randint(0, 2, n),            # has_internet
-            np.random.randint(0, 3, n),            # contract_type_encoded
-            np.random.randint(0, 4, n),            # payment_method_encoded
-            np.random.randint(0, 2, n),            # paperless_billing
-            np.random.randint(0, 2, n),            # tech_support
-            np.random.randint(0, 2, n),            # online_security
-        ])
+        data = np.column_stack(
+            [
+                np.random.randint(0, 72, n),  # tenure
+                np.random.uniform(20, 120, n),  # monthly_charges
+                np.random.uniform(100, 8000, n),  # total_charges
+                np.random.randint(1, 5, n),  # num_products
+                np.random.randint(0, 2, n),  # has_internet
+                np.random.randint(0, 3, n),  # contract_type_encoded
+                np.random.randint(0, 4, n),  # payment_method_encoded
+                np.random.randint(0, 2, n),  # paperless_billing
+                np.random.randint(0, 2, n),  # tech_support
+                np.random.randint(0, 2, n),  # online_security
+            ]
+        )
         return data.astype(float)

@@ -27,15 +27,15 @@ from fastapi.responses import JSONResponse
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
-    Histogram,
     Gauge,
+    Histogram,
     generate_latest,
 )
 
 from config.logging_config import configure_logging, get_logger, set_trace_id
 from config.settings import get_settings
-from src.api.routers import health, inference, metrics, models
 from src.api.middleware.rate_limiter import RateLimitMiddleware
+from src.api.routers import health, inference, metrics, models
 from src.database.connection import close_db, init_db
 from src.serving.model_loader import ModelLoader
 
@@ -75,6 +75,7 @@ DRIFT_ALERTS = Counter(
 
 # ── Application Lifespan ──────────────────────────────────────────────────────
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """
@@ -99,6 +100,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     # 3. Start Kafka producer (if enabled)
     if settings.enable_kafka_streaming:
         from src.streaming.producer import KafkaPredictionProducer
+
         producer = KafkaPredictionProducer()
         app.state.kafka_producer = producer
         logger.info("kafka_producer_started")
@@ -120,6 +122,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
 
 # ── App Factory ────────────────────────────────────────────────────────────────
+
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -235,8 +238,8 @@ if __name__ == "__main__":
         "src.api.main:app",
         host="0.0.0.0",
         port=8000,
-        workers=1,          # use 1 worker; model is loaded in process memory
-        log_config=None,    # structlog handles logging
-        access_log=False,   # our middleware handles access logs
+        workers=1,  # use 1 worker; model is loaded in process memory
+        log_config=None,  # structlog handles logging
+        access_log=False,  # our middleware handles access logs
         reload=settings.debug,
     )

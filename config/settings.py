@@ -7,7 +7,6 @@ This eliminates hardcoded values and enables 12-factor app compliance.
 
 from __future__ import annotations
 
-import os
 from enum import Enum
 from functools import lru_cache
 from typing import List, Optional
@@ -88,12 +87,8 @@ class MLflowSettings(BaseSettings):
     experiment_name: str = Field(
         default="modelmesh-churn-detection", env="MLFLOW_EXPERIMENT_NAME"
     )
-    model_name: str = Field(
-        default="churn-classifier", env="MLFLOW_MODEL_NAME"
-    )
-    artifact_root: str = Field(
-        default="./mlruns", env="MLFLOW_ARTIFACT_ROOT"
-    )
+    model_name: str = Field(default="churn-classifier", env="MLFLOW_MODEL_NAME")
+    artifact_root: str = Field(default="./mlruns", env="MLFLOW_ARTIFACT_ROOT")
     s3_bucket: Optional[str] = Field(default=None, env="MLFLOW_S3_BUCKET")
 
     class Config:
@@ -101,18 +96,14 @@ class MLflowSettings(BaseSettings):
 
 
 class ServingSettings(BaseSettings):
-    champion_model_alias: str = Field(
-        default="champion", env="CHAMPION_MODEL_ALIAS"
-    )
+    champion_model_alias: str = Field(default="champion", env="CHAMPION_MODEL_ALIAS")
     challenger_model_alias: str = Field(
         default="challenger", env="CHALLENGER_MODEL_ALIAS"
     )
     shadow_traffic_pct: float = Field(
         default=0.05, env="SHADOW_TRAFFIC_PCT"
     )  # 5% to challenger
-    inference_timeout_secs: float = Field(
-        default=2.0, env="INFERENCE_TIMEOUT_SECS"
-    )
+    inference_timeout_secs: float = Field(default=2.0, env="INFERENCE_TIMEOUT_SECS")
     max_batch_size: int = Field(default=128, env="MAX_BATCH_SIZE")
     enable_shap: bool = Field(default=True, env="ENABLE_SHAP")
     shap_sample_rate: float = Field(
@@ -130,9 +121,7 @@ class MonitoringSettings(BaseSettings):
     drift_reference_window: int = Field(
         default=5000, env="DRIFT_REFERENCE_WINDOW"
     )  # rows
-    drift_current_window: int = Field(
-        default=1000, env="DRIFT_CURRENT_WINDOW"
-    )  # rows
+    drift_current_window: int = Field(default=1000, env="DRIFT_CURRENT_WINDOW")  # rows
     psi_threshold: float = Field(default=0.2, env="PSI_THRESHOLD")
     ks_p_value_threshold: float = Field(default=0.05, env="KS_P_VALUE_THRESHOLD")
     f1_degradation_threshold: float = Field(
@@ -190,9 +179,7 @@ class Settings(BaseSettings):
     # ── Meta ─────────────────────────────────────────────────────────────────
     app_name: str = "ModelMesh"
     app_version: str = "1.0.0"
-    environment: Environment = Field(
-        default=Environment.DEVELOPMENT, env="ENVIRONMENT"
-    )
+    environment: Environment = Field(default=Environment.DEVELOPMENT, env="ENVIRONMENT")
     debug: bool = Field(default=False, env="DEBUG")
     log_level: str = Field(default="INFO", env="LOG_LEVEL")
     log_format: str = Field(default="json", env="LOG_FORMAT")  # json | text
@@ -207,9 +194,7 @@ class Settings(BaseSettings):
     security: SecuritySettings = SecuritySettings()
 
     # ── Feature flags ─────────────────────────────────────────────────────────
-    enable_shadow_deployment: bool = Field(
-        default=True, env="ENABLE_SHADOW_DEPLOYMENT"
-    )
+    enable_shadow_deployment: bool = Field(default=True, env="ENABLE_SHADOW_DEPLOYMENT")
     enable_auto_retrain: bool = Field(default=True, env="ENABLE_AUTO_RETRAIN")
     enable_kafka_streaming: bool = Field(default=True, env="ENABLE_KAFKA_STREAMING")
     enable_prometheus: bool = Field(default=True, env="ENABLE_PROMETHEUS")

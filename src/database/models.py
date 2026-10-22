@@ -9,12 +9,9 @@ for efficient range scans over large prediction tables.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (
     JSON,
-    BigInteger,
     Boolean,
     Column,
     DateTime,
@@ -37,6 +34,7 @@ class Base(DeclarativeBase):
 
 # ── Prediction Log ─────────────────────────────────────────────────────────────
 
+
 class PredictionLog(Base):
     """
     Every inference call is logged here for:
@@ -56,16 +54,14 @@ class PredictionLog(Base):
     prediction = Column(Float, nullable=False)
     prediction_label = Column(Integer, nullable=True)  # 0 or 1 for classification
     prediction_proba = Column(Float, nullable=True)
-    features = Column(JSON, nullable=False)         # raw input features
-    shap_values = Column(JSON, nullable=True)        # SHAP explanation (sampled)
-    latency_ms = Column(Float, nullable=False)       # end-to-end inference time
-    actual_label = Column(Integer, nullable=True)    # ground truth (filled later)
+    features = Column(JSON, nullable=False)  # raw input features
+    shap_values = Column(JSON, nullable=True)  # SHAP explanation (sampled)
+    latency_ms = Column(Float, nullable=False)  # end-to-end inference time
+    actual_label = Column(Integer, nullable=True)  # ground truth (filled later)
     feedback_received_at = Column(DateTime, nullable=True)
-    cost_usd = Column(Float, nullable=True)          # inference cost
-    created_at = Column(
-        DateTime, nullable=False, server_default=func.now(), index=True
-    )
-    client_ip = Column(String(45), nullable=True)    # hashed for privacy
+    cost_usd = Column(Float, nullable=True)  # inference cost
+    created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)
+    client_ip = Column(String(45), nullable=True)  # hashed for privacy
 
     __table_args__ = (
         # BRIN index: tiny on disk, fast for range scans on append-only logs
@@ -75,6 +71,7 @@ class PredictionLog(Base):
 
 
 # ── Drift Report ───────────────────────────────────────────────────────────────
+
 
 class DriftReport(Base):
     """
@@ -89,9 +86,9 @@ class DriftReport(Base):
     model_version = Column(String(32), nullable=False)
     report_type = Column(String(32), nullable=False)  # data_drift | target_drift | perf
     dataset_drift_detected = Column(Boolean, nullable=False, default=False)
-    drift_share = Column(Float, nullable=True)        # fraction of features drifted
-    feature_metrics = Column(JSON, nullable=True)     # per-feature PSI / KS stats
-    performance_metrics = Column(JSON, nullable=True) # F1, AUC, precision, recall
+    drift_share = Column(Float, nullable=True)  # fraction of features drifted
+    feature_metrics = Column(JSON, nullable=True)  # per-feature PSI / KS stats
+    performance_metrics = Column(JSON, nullable=True)  # F1, AUC, precision, recall
     reference_window_start = Column(DateTime, nullable=True)
     reference_window_end = Column(DateTime, nullable=True)
     current_window_start = Column(DateTime, nullable=True)
@@ -112,6 +109,7 @@ class DriftReport(Base):
 
 # ── Retrain Event ──────────────────────────────────────────────────────────────
 
+
 class RetrainEvent(Base):
     """
     Tracks every automated or manual retrain trigger, including outcome.
@@ -120,7 +118,9 @@ class RetrainEvent(Base):
     __tablename__ = "retrain_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    trigger_type = Column(String(32), nullable=False)  # drift_alert | manual | scheduled
+    trigger_type = Column(
+        String(32), nullable=False
+    )  # drift_alert | manual | scheduled
     drift_report_id = Column(
         UUID(as_uuid=True), ForeignKey("drift_reports.id"), nullable=True
     )
@@ -133,7 +133,9 @@ class RetrainEvent(Base):
     promoted = Column(Boolean, default=False)
     promotion_reason = Column(String(256), nullable=True)
     prefect_flow_run_id = Column(String(64), nullable=True)
-    status = Column(String(32), default="pending")  # pending | running | success | failed
+    status = Column(
+        String(32), default="pending"
+    )  # pending | running | success | failed
     error_message = Column(Text, nullable=True)
     started_at = Column(DateTime, nullable=False, server_default=func.now())
     completed_at = Column(DateTime, nullable=True)
@@ -146,6 +148,7 @@ class RetrainEvent(Base):
 
 
 # ── A/B Test Result ────────────────────────────────────────────────────────────
+
 
 class ABTestResult(Base):
     """
@@ -170,11 +173,12 @@ class ABTestResult(Base):
     champion_avg_proba = Column(Float, nullable=True)
     challenger_avg_proba = Column(Float, nullable=True)
     statistical_significance = Column(Float, nullable=True)  # p-value
-    winner = Column(String(32), nullable=True)               # champion | challenger
+    winner = Column(String(32), nullable=True)  # champion | challenger
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
 
 # ── Model Metadata ─────────────────────────────────────────────────────────────
+
 
 class ModelMetadata(Base):
     """

@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, Query
 
+from config.settings import get_settings
 from src.api.middleware.auth import verify_api_key
 from src.api.schemas.inference import DriftReportResponse
 from src.database.connection import get_db_session
 from src.database.crud import get_latest_ab_results, get_latest_drift_report
-from config.settings import get_settings
 
 settings = get_settings()
 router = APIRouter()
@@ -20,9 +20,7 @@ router = APIRouter()
 @router.get("/drift/latest", response_model=DriftReportResponse)
 async def get_drift_report(_: str = Depends(verify_api_key)) -> DriftReportResponse:
     async with get_db_session() as session:
-        report = await get_latest_drift_report(
-            session, settings.mlflow.model_name
-        )
+        report = await get_latest_drift_report(session, settings.mlflow.model_name)
     if not report:
         return DriftReportResponse(
             model_name=settings.mlflow.model_name,

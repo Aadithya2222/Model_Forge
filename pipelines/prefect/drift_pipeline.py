@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Dict, Any
+from typing import Any, Dict
 
 from prefect import flow, get_run_logger, task
 
@@ -19,6 +19,7 @@ def task_run_drift_check() -> Dict[str, Any]:
 async def _async_drift_check() -> Dict:
     from src.database.connection import init_db
     from src.monitoring.drift_monitor import DriftMonitorService
+
     await init_db()
     service = DriftMonitorService()
     return await service.run_check()

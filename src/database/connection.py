@@ -10,13 +10,13 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy import text
 
 from config.logging_config import get_logger
 from config.settings import get_settings
@@ -41,7 +41,7 @@ def get_engine() -> AsyncEngine:
             pool_size=settings.database.pool_size,
             max_overflow=settings.database.max_overflow,
             pool_pre_ping=True,
-            pool_recycle=3600,          # recycle connections every hour
+            pool_recycle=3600,  # recycle connections every hour
             echo=settings.debug,
         )
         logger.info(
