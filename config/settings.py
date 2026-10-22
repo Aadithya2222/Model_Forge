@@ -11,7 +11,7 @@ from enum import Enum
 from functools import lru_cache
 from typing import List, Optional
 
-from pydantic import AnyHttpUrl, Field, validator
+from pydantic import AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -160,14 +160,37 @@ class SecuritySettings(BaseSettings):
         default=["http://localhost:3000"], env="CORS_ORIGINS"
     )
 
-    @validator("api_keys", pre=True)
+    @field_validator("api_keys", mode="before")
+    @classmethod
     def parse_api_keys(cls, v):
         if isinstance(v, str):
-            return [k.strip() for k in v.split(",")]
+            if v.startswith("[") and v.endswith("]"):
+                import json
+
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [k.strip() for k in v.split(",") if k.strip()]
+        return v
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            if v.startswith("[") and v.endswith("]"):
+                import json
+
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [k.strip() for k in v.split(",") if k.strip()]
         return v
 
     class Config:
         env_prefix = ""
+        protected_namespaces = ()
 
 
 class Settings(BaseSettings):
